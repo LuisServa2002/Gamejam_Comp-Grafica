@@ -99,13 +99,20 @@ class Horno(MinijuegoBase):
             self.resultado = False
 
     def dibujar(self, pantalla):
-        # Fondo placeholder (Gris oscuro para el área del minijuego)
-        pantalla.fill((30, 30, 35))
+        # Capa de contraste semi-transparente sobre el fondo de la cocina
+        overlay = pygame.Surface((settings.ANCHO, settings.ALTO), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        pantalla.blit(overlay, (0, 0))
         
         # Dibujar la Zona de Impacto (Rectángulo indicador abajo)
-        # Cambia de color sutilmente para que el jugador sepa dónde presionar
         color_zona = settings.NARANJA
-        pygame.draw.rect(pantalla, color_zona, (100, self.zona_y - (self.zona_alto // 2), settings.ANCHO - 200, self.zona_alto), 2)
+        from utils.assets import get_asset_manager
+        zona_img = get_asset_manager().get("zona_impacto")
+        if zona_img is not None:
+            zona_esc = pygame.transform.smoothscale(zona_img, (settings.ANCHO - 200, self.zona_alto))
+            pantalla.blit(zona_esc, (100, self.zona_y - (self.zona_alto // 2)))
+        else:
+            pygame.draw.rect(pantalla, color_zona, (100, self.zona_y - (self.zona_alto // 2), settings.ANCHO - 200, self.zona_alto), 2)
         
         # Dibujar los círculos que caen
         for circulo in self.circulos:

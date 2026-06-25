@@ -13,6 +13,8 @@ class GameManager:
         self.estado = "inicio"
         self.minijuego_actual = None
         self.indice_minijuego = 0
+        self.fase_pedido: str | None = None  # anim_cliente | anim_horno | anim_resultado
+        self._ultimo_pedido_exitoso: bool | None = None
         self._llenar_cola_pedidos()
 
     def reiniciar(self) -> None:
@@ -23,6 +25,8 @@ class GameManager:
         self.estado = "inicio"
         self.minijuego_actual = None
         self.indice_minijuego = 0
+        self.fase_pedido = None
+        self._ultimo_pedido_exitoso = None
         self._llenar_cola_pedidos()
 
     def actualizar_timer(self, dt: float) -> None:
@@ -43,9 +47,29 @@ class GameManager:
         self.pedidos_disponibles.remove(pedido)
         self.pedido_activo = pedido
         self.indice_minijuego = 0
-        self.estado = "minijuego"
         self.minijuego_actual = None
-        return True
+        self.fase_pedido = "anim_cliente"
+        # Permanece en estado "juego" hasta terminar animaciones
+        return True    
+    
+    def avanzar_fase_pedido(self) -> None:
+        """Transición anim_cliente → anim_horno (si aplica) → minijuego."""
+        if self.pedido_activo is None:
+            self.fase_pedido = None
+            return
+
+        if self.fase_pedido == "anim_cliente":
+            if self.get_minijuego_actual_id() == "horno":
+                self.fase_pedido = "anim_horno"
+            else:
+                self.fase_pedido = None
+                self.estado = "minijuego"
+            return
+
+        if self.fase_pedido == "anim_horno":
+            self.fase_pedido = None
+            self.estado = "minijuego"
+            return   
 
     def registrar_resultado_minijuego(self, exito: bool) -> None:
         if self.pedido_activo is None:
@@ -68,11 +92,7 @@ class GameManager:
         if self.pedido_activo.precio_actual > PRECIO_MINIMO_COBRO:
             self.dinero_acumulado += self.pedido_activo.precio_actual
 
-        self.pedido_activo = None
-        self.indice_minijuego = 0
-        self.minijuego_actual = None
-        self.estado = "juego"
-        self.generar_nuevo_pedido()
+        self._mostrar_resultado_pedido(exito=True)
 
     def generar_nuevo_pedido(self) -> None:
         self.pedidos_disponibles.append(Pedido.generar_aleatorio())
@@ -85,11 +105,24 @@ class GameManager:
         return self.pedido_activo.minijuegos[self.indice_minijuego]
 
     def _cancelar_pedido_activo(self) -> None:
+        self._mostrar_resultado_pedido(exito=False)
+
+    def _mostrar_resultado_pedido(self, exito: bool) -> None:
+        self._ultimo_pedido_exitoso = exito
         self.pedido_activo = None
         self.indice_minijuego = 0
         self.minijuego_actual = None
         self.estado = "juego"
-        self._llenar_cola_pedidos()
+        self.fase_pedido = "anim_resultado"
+
+    def finalizar_resultado_pedido(self) -> None:
+        exito = self._ultimo_pedido_exitoso
+        self.fase_pedido = None
+        self._ultimo_pedido_exitoso = None
+        if exito:
+            self.generar_nuevo_pedido()
+        else:
+            self._llenar_cola_pedidos()
 
     def _llenar_cola_pedidos(self) -> None:
         while len(self.pedidos_disponibles) < PEDIDOS_EN_COLA:

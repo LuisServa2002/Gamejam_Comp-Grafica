@@ -53,8 +53,10 @@ class Corte(MinijuegoBase):
             self.resultado = False
 
     def dibujar(self, pantalla):
-        # Fondo plano oscuro para enfocar la vista
-        pantalla.fill((35, 30, 30))
+        # Capa de contraste semi-transparente sobre el fondo de la cocina
+        overlay = pygame.Surface((settings.ANCHO, settings.ALTO), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        pantalla.blit(overlay, (0, 0))
         
         # Fuentes de texto
         fuente_letras = pygame.font.SysFont("Arial", 48, bold=True)

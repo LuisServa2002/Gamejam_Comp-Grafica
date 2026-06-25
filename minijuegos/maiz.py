@@ -40,16 +40,24 @@ class Maiz(MinijuegoBase):
             self.resultado = False
 
     def dibujar(self, pantalla):
-        # Fondo oscuro tirando para marrón/gris
-        pantalla.fill((30, 30, 25))
+        # Capa de contraste semi-transparente sobre el fondo de la cocina
+        overlay = pygame.Surface((settings.ANCHO, settings.ALTO), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        pantalla.blit(overlay, (0, 0))
         
         fuente_titulo = pygame.font.SysFont("Arial", 32, bold=True)
         fuente_ui = pygame.font.SysFont("Arial", 24)
         
+        # Dibujar choclo si está disponible
+        from utils.assets import get_asset_manager
+        maiz_img = get_asset_manager().get("maiz")
+        if maiz_img is not None:
+            pantalla.blit(maiz_img, (settings.ANCHO // 2 - maiz_img.get_width() // 2, 215))
+
         # 1. Dibujar el texto instructivo
         texto_instruccion = fuente_titulo.render("¡PRESIONA ESPACIO REPETIDAMENTE!", True, settings.AMARILLO)
         texto_timer = fuente_ui.render(f"Tiempo: {max(0.0, self.tiempo_restante):.1f}s", True, settings.BLANCO)
-        pantalla.blit(texto_instruccion, texto_instruccion.get_rect(center=(settings.ANCHO // 2, 180)))
+        pantalla.blit(texto_instruccion, texto_instruccion.get_rect(center=(settings.ANCHO // 2, 170)))
         pantalla.blit(texto_timer, (20, settings.HUD_ALTO + 10))
         
         # 2. Dibujar el contorno de la Barra de Progreso Maíz (Centro de la pantalla)
