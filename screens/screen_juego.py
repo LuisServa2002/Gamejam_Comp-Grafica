@@ -5,7 +5,7 @@ from settings import AMARILLO, BLANCO, META_DINERO, NARANJA, NEGRO, ROJO
 
 from minijuegos.horno import Horno
 from minijuegos.corte import Corte
-
+from minijuegos.maiz import Maiz
 
 def _formatear_tiempo(segundos: float) -> str:
     total = max(0, int(segundos))
@@ -28,6 +28,7 @@ class ScreenJuego:
         self.MINIJUEGOS_REGISTRO = {
             "horno": Horno,
             "corte": Corte,
+            "maiz": Maiz
         }
 
     def manejar_eventos(self, eventos):
