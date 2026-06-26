@@ -14,8 +14,18 @@ NARANJA = (230, 120, 30)
 
 # Gameplay
 TIEMPO_LIMITE = 60
-META_DINERO = 60
 PENALIZACION_FALLO = 10
+
+# Sistema de Niveles (§10.3)
+NIVEL_METAS = {1: 60, 2: 80, 3: 100, 4: 115, 5: 125}
+NIVEL_META_TECHO = 130
+FACTOR_TRANSFERENCIA = 0.75
+
+# Economía de tiempo por nivel (§10.5)
+# Clave = nivel; niveles > 4 usan la clave 4
+TIEMPO_PENALIZACION = {1: 0, 2: 2, 3: 3, 4: 4}  # segundos restados por fallo
+TIEMPO_BONUS_EXITO  = {1: 0, 2: 1, 3: 2, 4: 2}  # segundos sumados por éxito
+TIEMPO_BONUS_PEDIDO = {1: 0, 2: 3, 3: 4, 4: 5}  # bonus al completar pedido sin fallos
 
 # Precios de pedidos
 PRECIO_CUARTO = 20

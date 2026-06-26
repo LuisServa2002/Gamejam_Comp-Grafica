@@ -4,7 +4,7 @@ from entities.pedido import Pedido
 from minijuegos.corte import Corte
 from minijuegos.horno import Horno
 from minijuegos.maiz import Maiz
-from settings import AMARILLO, ANCHO, BLANCO, HUD_ALTO, META_DINERO, NARANJA
+from settings import AMARILLO, ANCHO, BLANCO, HUD_ALTO, NARANJA
 from entities.cliente import (
     AnimacionClientePedido,
     AnimacionHumanoHorno,
@@ -128,20 +128,24 @@ class ScreenJuego:
         if id_minijuego not in self.MINIJUEGOS_REGISTRO:
             return
         cls = self.MINIJUEGOS_REGISTRO[id_minijuego]
+        nivel = self.gm.nivel
         if id_minijuego == "horno" and self.gm.indice_minijuego == 2:
-            self.gm.minijuego_actual = cls(velocidad_extra=1.0)
+            self.gm.minijuego_actual = cls(nivel=nivel, velocidad_extra=1.0)
         else:
-            self.gm.minijuego_actual = cls()
+            self.gm.minijuego_actual = cls(nivel=nivel)
 
     def _dibujar_hud(self, pantalla):
         tiempo = _formatear_tiempo(self.gm.tiempo_restante)
+        meta = self.gm.get_meta_actual()
         texto_tiempo = self.fuente_hud.render(f"Tiempo: {tiempo}", True, BLANCO)
         texto_dinero = self.fuente_hud.render(
-            f"Total: ${self.gm.dinero_acumulado} / ${META_DINERO}", True, AMARILLO
+            f"Total: ${self.gm.dinero_acumulado} / ${meta}", True, AMARILLO
         )
+        texto_nivel = self.fuente_hud.render(f"Nivel {self.gm.nivel}", True, NARANJA)
         pygame.draw.rect(pantalla, (40, 30, 25), (0, 0, ANCHO, HUD_ALTO))
         pantalla.blit(texto_tiempo, (20, 20))
-        pantalla.blit(texto_dinero, (480, 20))
+        pantalla.blit(texto_nivel, (texto_nivel.get_rect(centerx=ANCHO // 2).x, 20))
+        pantalla.blit(texto_dinero, (ANCHO - texto_dinero.get_width() - 20, 20))
         pygame.draw.line(pantalla, NARANJA, (0, HUD_ALTO), (ANCHO, HUD_ALTO), 2)
 
     def _dibujar_cola_pedidos(self, pantalla):

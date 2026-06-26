@@ -17,11 +17,12 @@ def main():
 
     gm = GameManager()
     screen_juego = ScreenJuego(gm)
+    screen_victoria = ScreenVictoria(gm)
     screens = {
         "inicio": ScreenInicio(gm),
         "juego": screen_juego,
         "minijuego": screen_juego,  # comparte instancia
-        "victoria": ScreenVictoria(gm),
+        "nivel_completado": screen_victoria,
         "derrota": ScreenDerrota(gm),
         "pausa": ScreenPausa(gm),
     }
@@ -52,6 +53,10 @@ def main():
                 screen_fondo = screens.get(gm._estado_previo)
                 if screen_fondo:
                     screen_fondo.dibujar(pantalla)
+
+            # Capturar datos al entrar a nivel_completado por primera vez
+            if gm.estado == "nivel_completado" and screen_victoria._nivel_completado != gm.nivel:
+                screen_victoria._capturar_estado()
 
             screen_actual.manejar_eventos(eventos)
             if gm.estado != "pausa":

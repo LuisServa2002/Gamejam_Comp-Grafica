@@ -18,14 +18,20 @@ class Horno(MinijuegoBase):
         pygame.K_RIGHT: "flecha_derecha",
     }
 
-    def __init__(self, velocidad_extra: float = 0):
+    def __init__(self, nivel: int = 1, velocidad_extra: float = 0):
         super().__init__()
 
         self.tiempo_transcurrido = 0.0
-        self.ventana_tiempo = settings.HORNO_VENTANA_MS / 1000.0
-        self.velocidad_caida = (
-            settings.HORNO_VELOCIDAD_INICIAL + velocidad_extra
-        ) * _ESCALA_VELOCIDAD_PX
+
+        # Dificultad por nivel (§10.4)
+        _tabla_velocidad = {1: 3.0, 2: 3.5, 3: 4.0, 4: 4.5}
+        _tabla_ventana   = {1: 150, 2: 135, 3: 120, 4: 110}  # ms
+        nivel_clave = min(nivel, 4)
+        velocidad_base = _tabla_velocidad.get(nivel_clave, 4.5)
+        ventana_ms     = _tabla_ventana.get(nivel_clave, 110)
+
+        self.ventana_tiempo = ventana_ms / 1000.0
+        self.velocidad_caida = (velocidad_base + velocidad_extra) * _ESCALA_VELOCIDAD_PX
 
         self.linea_impacto_y = settings.ALTO - 80
 
@@ -62,6 +68,7 @@ class Horno(MinijuegoBase):
         self.total_notas = len(self.notas)
         self.aciertos = 0
         self.fallos = 0
+        self.fuente_ui = pygame.font.SysFont("Arial", 24, bold=True)
 
     def manejar_eventos(self, eventos):
         for evento in eventos:
@@ -93,33 +100,31 @@ class Horno(MinijuegoBase):
             self.resultado = ratio >= settings.HORNO_PORCENTAJE_EXITO
 
     def dibujar(self, pantalla):
+        # 1. Capa oscura para enfocar el minijuego
         overlay = pygame.Surface((settings.ANCHO, settings.ALTO), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 120))
         pantalla.blit(overlay, (0, 0))
 
         y_visible_min = settings.HUD_ALTO + 30
 
-        if self.zona_impacto is not None:
-            for x_pos in self.carriles.values():
-                rect = self.zona_impacto.get_rect(center=(int(x_pos), self.linea_impacto_y))
-                pantalla.blit(self.zona_impacto, rect)
-        else:
-            pygame.draw.line(
-                pantalla,
-                settings.BLANCO,
-                (180, self.linea_impacto_y),
-                (620, self.linea_impacto_y),
-                3,
-            )
+        # 2. Contador de aciertos
+        texto_contador = f"Aciertos: {self.aciertos} / {self.total_notas}"
+        texto_surf = self.fuente_ui.render(texto_contador, True, settings.BLANCO)
+        rect_texto = texto_surf.get_rect(center=(settings.ANCHO // 2, settings.HUD_ALTO + 30))
+        pantalla.blit(texto_surf, rect_texto)
 
+        # 3. Flechas receptoras (fijas) semi-transparentes
         mitad_flecha = 20
         for tecla, x_pos in self.carriles.items():
             img_fija = self.imagenes_flechas[tecla]
             if img_fija is not None:
+                img_fija.set_alpha(100)  # Semi-transparente para distinguirlas
                 pantalla.blit(
                     img_fija,
                     (int(x_pos) - mitad_flecha, self.linea_impacto_y - mitad_flecha),
                 )
+                img_fija.set_alpha(255)  # Restaurar para las notas
+
 
         for nota in self.notas:
             if not nota["activa"]:

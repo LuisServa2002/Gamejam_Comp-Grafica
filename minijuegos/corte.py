@@ -4,7 +4,7 @@ from minijuegos.minijuego_base import MinijuegoBase
 import settings
 
 class Corte(MinijuegoBase):
-    def __init__(self):
+    def __init__(self, nivel: int = 1):
         super().__init__()
         
         # Teclas permitidas según la planificación
@@ -14,15 +14,21 @@ class Corte(MinijuegoBase):
             pygame.K_f: "F", pygame.K_j: "J", pygame.K_k: "K"
         }
         
-        # Generar secuencia aleatoria usando la longitud de settings (5)
-        self.longitud_secuencia = settings.CORTE_LONGITUD_SECUENCIA
+        # Dificultad por nivel (§10.4)
+        _tabla_longitud = {1: 5, 2: 5, 3: 6, 4: 7}
+        _tabla_tiempo   = {1: 5.0, 2: 4.5, 3: 4.5, 4: 4.0}
+        nivel_clave = min(nivel, 4)
+        self.longitud_secuencia = _tabla_longitud.get(nivel_clave, 7)
+        tiempo_limite = _tabla_tiempo.get(nivel_clave, 4.0)
+
         self.secuencia = [random.choice(self.teclas_posibles) for _ in range(self.longitud_secuencia)]
         
         # Estado del progreso en la secuencia
         self.indice_actual = 0  # Qué posición de la secuencia debe presionar ahora
         
-        # Temporizador (5 segundos de límite)
-        self.tiempo_restante = settings.CORTE_TIEMPO_LIMITE
+        # Temporizador
+        self.tiempo_restante = tiempo_limite
+        self._tiempo_limite = tiempo_limite  # guardado para la barra de progreso
 
     def manejar_eventos(self, eventos):
         for evento in eventos:
@@ -64,7 +70,7 @@ class Corte(MinijuegoBase):
         
         # 1. Dibujar Barra de Tiempo Restante (Visual)
         ancho_barra_max = 400
-        proporcion_tiempo = max(0, self.tiempo_restante / settings.CORTE_TIEMPO_LIMITE)
+        proporcion_tiempo = max(0, self.tiempo_restante / self._tiempo_limite)
         ancho_barra_actual = int(ancho_barra_max * proporcion_tiempo)
         
         # Contenedor de la barra (Rojo oscuro) y relleno (Rojo vivo)

@@ -3,18 +3,24 @@ from minijuegos.minijuego_base import MinijuegoBase
 import settings
 
 class Maiz(MinijuegoBase):
-    def __init__(self):
+    def __init__(self, nivel: int = 1):
         super().__init__()
         
         # Progreso de la barra (0.0 a 100.0)
         self.progreso = 0.0
         
-        # Tiempo límite (4 segundos según planificación)
-        self.tiempo_restante = settings.MAIZ_TIEMPO_LIMITE
+        # Dificultad por nivel (§10.4)
+        _tabla_descarga = {1: 15.0, 2: 18.0, 3: 21.0, 4: 24.0}
+        _tabla_tiempo   = {1: 4.0,  2: 3.5,  3: 3.5,  4: 3.0}
+        nivel_clave = min(nivel, 4)
+        tiempo_limite = _tabla_tiempo.get(nivel_clave, 3.0)
+
+        self.tiempo_restante = tiempo_limite
+        self._tiempo_limite = tiempo_limite  # para la barra de progreso si se necesita
         
-        # Configuración del juego (Valores calibrados para balancear la dificultad)
-        self.fuerza_pulsacion = 8.0  # Cuánto sube por cada "espaciazo"
-        self.velocidad_descarga = 15.0  # Cuánto baja por segundo de forma pasiva
+        # Configuración del juego
+        self.fuerza_pulsacion = 8.0  # Cuánto sube por cada pulsación
+        self.velocidad_descarga = _tabla_descarga.get(nivel_clave, 24.0)
 
     def manejar_eventos(self, eventos):
         for evento in eventos:

@@ -60,8 +60,17 @@ class Pedido:
             self.cancelado = True
 
     @classmethod
-    def generar_aleatorio(cls) -> "Pedido":
-        tipo = random.choice(list(TIPOS_PLATO.keys()))
+    def generar_aleatorio(cls, nivel: int = 1) -> "Pedido":
+        # Distribución ponderada por nivel (§10.6)
+        # Nivel 1: mayoría cuartos y medios; nivel 3+: mayoría enteros
+        if nivel <= 1:
+            pesos = [6, 3, 1]   # cuarto 60%, medio 30%, entero 10%
+        elif nivel == 2:
+            pesos = [3, 4, 3]   # cuarto 30%, medio 40%, entero 30%
+        else:
+            pesos = [1, 3, 6]   # cuarto 10%, medio 30%, entero 60%
+
+        tipo = random.choices(list(TIPOS_PLATO.keys()), weights=pesos, k=1)[0]
         con_maiz = random.choice([True, False])
         return cls(tipo, con_maiz)
 
