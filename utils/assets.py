@@ -105,6 +105,30 @@ class AssetManager:
             color_fallback=settings.NARANJA,
             etiqueta_fallback="",
         )
+        self._cache["flecha_izquierda"] = cargar_imagen(
+            settings.RUTA_FLECHA_IZQUIERDA,
+            (40, 40),
+            color_fallback=settings.ROJO,
+            etiqueta_fallback="←",
+        )
+        self._cache["flecha_abajo"] = cargar_imagen(
+            settings.RUTA_FLECHA_ABAJO,
+            (40, 40),
+            color_fallback=settings.AMARILLO,
+            etiqueta_fallback="↓",
+        )
+        self._cache["flecha_arriba"] = cargar_imagen(
+            settings.RUTA_FLECHA_ARRIBA,
+            (40, 40),
+            color_fallback=settings.NARANJA,
+            etiqueta_fallback="↑",
+        )
+        self._cache["flecha_derecha"] = cargar_imagen(
+            settings.RUTA_FLECHA_DERECHA,
+            (40, 40),
+            color_fallback=settings.BLANCO,
+            etiqueta_fallback="→",
+        )
         self._cache["barra_progreso"] = cargar_imagen(
             settings.RUTA_BARRA_PROGRESO,
             (200, 30),

@@ -1,129 +1,138 @@
+import pygame
 import random
 
-import pygame
-
-import settings
 from minijuegos.minijuego_base import MinijuegoBase
+import settings
+from utils.assets import get_asset_manager
+
+# HORNO_VELOCIDAD_INICIAL=3 en settings equivale ~250 px/s (calibración visual)
+_ESCALA_VELOCIDAD_PX = 250 / 3
+
 
 class Horno(MinijuegoBase):
-    def __init__(self):
-        super().__init__()
-        
-        # Configuración de la Zona de Impacto (Línea objetivo abajo)
-        self.zona_y = settings.ALTO - 100
-        self.zona_alto = 30  # Grosor de la zona de acierto
-        
-        # Lógica de los círculos (Notas de ritmo)
-        self.circulos = []
-        self.total_circulos = random.randint(5, 8)  # Entre 5 y 8 círculos por ronda
-        self.circulos_lanzados = 0
-        
-        # Contadores de aciertos
-        self.aciertos = 0
-        self.intentos_totales = 0
-        
-        # Temporizador para espaciar la aparición de los círculos (en segundos)
-        self.spawn_timer = 0.0
-        self.tiempo_entre_spawns = 1.2  # Segundos entre círculo y círculo
-        
-        # Determinar la velocidad actual basándonos en las constantes
-        self.velocidad = settings.HORNO_VELOCIDAD_INICIAL * 60  # Pixeles por segundo
+    _TECLAS_CARRILES = (pygame.K_LEFT, pygame.K_DOWN, pygame.K_UP, pygame.K_RIGHT)
+    _CLAVES_FLECHAS = {
+        pygame.K_LEFT: "flecha_izquierda",
+        pygame.K_DOWN: "flecha_abajo",
+        pygame.K_UP: "flecha_arriba",
+        pygame.K_RIGHT: "flecha_derecha",
+    }
 
-    def _spawn_circulo(self):
-        """Genera un nuevo círculo en la parte superior."""
-        if self.circulos_lanzados < self.total_circulos:
-            # Aparece en el centro del eje X, arriba en Y=0
-            nuevo_circulo = {
-                "y": 0.0,
-                "procesado": False  # Para saber si ya se presionó o se pasó
-            }
-            self.circulos.append(nuevo_circulo)
-            self.circulos_lanzados += 1
+    def __init__(self, velocidad_extra: float = 0):
+        super().__init__()
+
+        self.tiempo_transcurrido = 0.0
+        self.ventana_tiempo = settings.HORNO_VENTANA_MS / 1000.0
+        self.velocidad_caida = (
+            settings.HORNO_VELOCIDAD_INICIAL + velocidad_extra
+        ) * _ESCALA_VELOCIDAD_PX
+
+        self.linea_impacto_y = settings.ALTO - 80
+
+        margen_lateral = 180
+        ancho_total = settings.ANCHO - 2 * margen_lateral
+        self.carriles = {
+            tecla: margen_lateral + i * (ancho_total / 3)
+            for i, tecla in enumerate(self._TECLAS_CARRILES)
+        }
+        self.lista_teclas = list(self.carriles.keys())
+
+        assets = get_asset_manager()
+        self.imagenes_flechas = {
+            tecla: assets.get(clave) for tecla, clave in self._CLAVES_FLECHAS.items()
+        }
+
+        zona = assets.get("zona_impacto")
+        self.zona_impacto = (
+            pygame.transform.smoothscale(zona, (80, 20)) if zona is not None else None
+        )
+
+        self.notas = []
+        cantidad_notas = random.randint(5, 8)
+        tiempo_inicial = 1.5
+        separacion_tiempo = 0.8
+
+        for i in range(cantidad_notas):
+            self.notas.append({
+                "tiempo": tiempo_inicial + (i * separacion_tiempo),
+                "tecla": random.choice(self.lista_teclas),
+                "activa": True,
+            })
+
+        self.total_notas = len(self.notas)
+        self.aciertos = 0
+        self.fallos = 0
 
     def manejar_eventos(self, eventos):
         for evento in eventos:
-            if evento.type == pygame.KEYDOWN:
-                if evento.key == pygame.K_SPACE:
-                    self._evaluar_presion_espacio()
+            if evento.type == pygame.KEYDOWN and evento.key in self.carriles:
+                self._evaluar_presion(evento.key)
 
-    def _evaluar_presion_espacio(self):
-        """Evalúa si el círculo más cercano está dentro de la ventana de impacto."""
-        # Buscar el primer círculo que no haya sido procesado aún
-        for circulo in self.circulos:
-            if not circulo["procesado"]:
-                self.intentos_totales += 1
-                
-                # Calcular la distancia en píxeles al centro de la zona de impacto
-                distancia = abs(circulo["y"] - self.zona_y)
-                
-                # Convertir la ventana de tiempo (ms) a la tolerancia en píxeles
-                # Distancia máxima = velocidad (px/s) * tiempo_tolerancia (s)
-                tiempo_tolerancia_segundos = (settings.HORNO_VENTANA_MS / 1000.0)
-                tolerancia_pixeles = self.velocidad * tiempo_tolerancia_segundos
-                
-                if distancia <= tolerancia_pixeles:
+    def _evaluar_presion(self, tecla_presionada):
+        for nota in self.notas:
+            if nota["tecla"] == tecla_presionada and nota["activa"]:
+                diferencia = abs(nota["tiempo"] - self.tiempo_transcurrido)
+                if diferencia <= self.ventana_tiempo:
+                    nota["activa"] = False
                     self.aciertos += 1
-
-                circulo["procesado"] = True
-                break  # Solo evaluamos el círculo más bajo en pantalla
+                    return
 
     def actualizar(self, dt):
-        # 1. Manejar el tiempo para lanzar nuevos círculos
-        self.spawn_timer += dt
-        if self.spawn_timer >= self.tiempo_entre_spawns:
-            self._spawn_circulo()
-            self.spawn_timer = 0.0
-            
-        # 2. Mover los círculos activos hacia abajo con delta time
-        for circulo in self.circulos:
-            circulo["y"] += self.velocidad * dt
-            
-            # Si el círculo se pasa del límite inferior y no ha sido procesado aún
-            if circulo["y"] > settings.ALTO:
-                if not circulo["procesado"]:
-                    circulo["procesado"] = True
-                    self.intentos_totales += 1
+        if self.resultado is not None:
+            return
 
-        # 3. Verificar si el minijuego ya terminó
-        # El juego termina cuando todos los círculos planificados ya fueron procesados
-        if self.intentos_totales >= self.total_circulos:
-            self._finalizar_minijuego()
+        self.tiempo_transcurrido += dt
 
-    def _finalizar_minijuego(self):
-        """Calcula el porcentaje de aciertos y dicta el resultado."""
-        if self.total_circulos > 0:
-            porcentaje = self.aciertos / self.total_circulos
-            # Éxito si supera el porcentaje de la rúbrica (60%)
-            self.resultado = porcentaje >= settings.HORNO_PORCENTAJE_EXITO
-        else:
-            self.resultado = False
+        for nota in self.notas:
+            if nota["activa"] and (self.tiempo_transcurrido - nota["tiempo"]) > self.ventana_tiempo:
+                nota["activa"] = False
+                self.fallos += 1
+
+        if (self.aciertos + self.fallos) >= self.total_notas:
+            ratio = self.aciertos / self.total_notas
+            self.resultado = ratio >= settings.HORNO_PORCENTAJE_EXITO
 
     def dibujar(self, pantalla):
-        # Capa de contraste semi-transparente sobre el fondo de la cocina
         overlay = pygame.Surface((settings.ANCHO, settings.ALTO), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 120))
         pantalla.blit(overlay, (0, 0))
-        
-        # Dibujar la Zona de Impacto (Rectángulo indicador abajo)
-        color_zona = settings.NARANJA
-        from utils.assets import get_asset_manager
-        zona_img = get_asset_manager().get("zona_impacto")
-        if zona_img is not None:
-            zona_esc = pygame.transform.smoothscale(zona_img, (settings.ANCHO - 200, self.zona_alto))
-            pantalla.blit(zona_esc, (100, self.zona_y - (self.zona_alto // 2)))
-        else:
-            pygame.draw.rect(pantalla, color_zona, (100, self.zona_y - (self.zona_alto // 2), settings.ANCHO - 200, self.zona_alto), 2)
-        
-        # Dibujar los círculos que caen
-        for circulo in self.circulos:
-            if not circulo["procesado"]:
-                # Círculo activo (Amarillo/Rojo como un pollo cocinándose)
-                pygame.draw.circle(pantalla, settings.AMARILLO, (settings.ANCHO // 2, int(circulo["y"])), 20)
-            else:
-                # Círculo ya presionado (se vuelve gris apagado instantáneamente)
-                pygame.draw.circle(pantalla, (80, 80, 80), (settings.ANCHO // 2, int(circulo["y"])), 15)
 
-        # Dibujar UI temporal del minijuego (Aciertos en tiempo real)
-        fuente = pygame.font.SysFont("Arial", 24)
-        texto = fuente.render(f"Aciertos: {self.aciertos} / {self.total_circulos}", True, settings.BLANCO)
-        pantalla.blit(texto, (20, settings.HUD_ALTO + 10))
+        y_visible_min = settings.HUD_ALTO + 30
+
+        if self.zona_impacto is not None:
+            for x_pos in self.carriles.values():
+                rect = self.zona_impacto.get_rect(center=(int(x_pos), self.linea_impacto_y))
+                pantalla.blit(self.zona_impacto, rect)
+        else:
+            pygame.draw.line(
+                pantalla,
+                settings.BLANCO,
+                (180, self.linea_impacto_y),
+                (620, self.linea_impacto_y),
+                3,
+            )
+
+        mitad_flecha = 20
+        for tecla, x_pos in self.carriles.items():
+            img_fija = self.imagenes_flechas[tecla]
+            if img_fija is not None:
+                pantalla.blit(
+                    img_fija,
+                    (int(x_pos) - mitad_flecha, self.linea_impacto_y - mitad_flecha),
+                )
+
+        for nota in self.notas:
+            if not nota["activa"]:
+                continue
+
+            x_pos = self.carriles[nota["tecla"]]
+            distancia_a_impacto = (nota["tiempo"] - self.tiempo_transcurrido) * self.velocidad_caida
+            y_pos = self.linea_impacto_y - distancia_a_impacto
+
+            if y_visible_min <= y_pos <= self.linea_impacto_y + 30:
+                img_nota = self.imagenes_flechas[nota["tecla"]]
+                if img_nota is not None:
+                    pantalla.blit(img_nota, (int(x_pos) - mitad_flecha, int(y_pos) - mitad_flecha))
+
+    def get_resultado(self):
+        return self.resultado
