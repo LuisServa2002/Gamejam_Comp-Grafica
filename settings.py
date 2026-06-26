@@ -41,9 +41,13 @@ HORNO_PORCENTAJE_EXITO = 0.6
 # Minijuego Corte
 CORTE_TIEMPO_LIMITE = 5
 CORTE_LONGITUD_SECUENCIA = 5
+CORTE_LONGITUD_POR_NIVEL = {1: 5, 2: 5, 3: 6, 4: 7}   # letras en la secuencia
+CORTE_TIEMPO_POR_NIVEL   = {1: 5.0, 2: 4.5, 3: 4.5, 4: 4.0}  # segundos límite
 
 # Minijuego Maíz
 MAIZ_TIEMPO_LIMITE = 4
+MAIZ_DESCARGA_POR_NIVEL = {1: 15, 2: 18, 3: 21, 4: 24}  # puntos/s que baja la barra sola
+MAIZ_TIEMPO_POR_NIVEL   = {1: 4.0, 2: 3.5, 3: 3.5, 4: 3.0}  # segundos límite
 
 # Animaciones (Día 3)
 ANIM_CLIENTE_DURACION = 2.0   # segundos
