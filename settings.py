@@ -15,6 +15,7 @@ NARANJA = (230, 120, 30)
 # Gameplay
 TIEMPO_LIMITE = 60
 PENALIZACION_FALLO = 10
+PRECIO_MINIMO_COBRO = 0   # precio mínimo para cobrar un pedido (evitar cobros negativos)
 
 # Sistema de Niveles (§10.3)
 NIVEL_METAS = {1: 60, 2: 80, 3: 100, 4: 115, 5: 125}

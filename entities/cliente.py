@@ -94,6 +94,7 @@ class AnimacionHumanoHorno:
         x_humano = int(x_inicio + (x_fin - x_inicio) * progreso)
         y_humano = cy
 
+        """
         # Reducir escala gradualmente
         escala = 1.0 - 0.6 * progreso
         ancho = max(8, int(humano_img.get_width() * escala))
@@ -101,7 +102,11 @@ class AnimacionHumanoHorno:
         
         humano_esc = pygame.transform.smoothscale(humano_img, (ancho, alto))
         humano_rect = humano_esc.get_rect(center=(x_humano, y_humano))
-        pantalla.blit(humano_esc, humano_rect)
+        pantalla.blit(humano_esc, humano_rect)"""
+
+        # Mantener el tamaño original del personaje
+        humano_rect = humano_img.get_rect(center=(x_humano, y_humano))
+        pantalla.blit(humano_img, humano_rect)
 
         titulo = self.fuente.render("¡Al horno!", True, settings.BLANCO)
         pantalla.blit(titulo, titulo.get_rect(center=(settings.ANCHO // 2, settings.HUD_ALTO + 40)))
