@@ -14,6 +14,10 @@ def main():
     pantalla = pygame.display.set_mode((ANCHO, ALTO))
     pygame.display.set_caption(TITULO)
     clock = pygame.time.Clock()
+    #Musica de fondo
+    pygame.mixer.music.load("assets/audio/musica_fondo.mp3")
+    pygame.mixer.music.set_volume(0.04)
+    pygame.mixer.music.play(-1)
 
     gm = GameManager()
     screen_juego = ScreenJuego(gm)
