@@ -35,6 +35,7 @@ class GameManager:
         self._ultimo_pedido_exitoso: bool | None = None
         self._estado_previo: str | None = None
         self._fallos_pedido_actual: int = 0   # fallos en el pedido en curso (para bonus de tiempo)
+        self._pedido_cancelado: bool = False
         self._llenar_cola_pedidos()
 
     # ------------------------------------------------------------------
@@ -149,6 +150,7 @@ class GameManager:
         self.minijuego_actual = None
         self.fase_pedido = "anim_cliente"
         self._fallos_pedido_actual = 0
+        self._pedido_cancelado = False
         return True
 
     def avanzar_fase_pedido(self) -> None:
@@ -202,8 +204,17 @@ class GameManager:
     def cobrar_pedido(self) -> None:
         if self.pedido_activo is None:
             return
-        self.dinero_acumulado += self.pedido_activo.precio_actual
-        self._mostrar_resultado_pedido(exito=True)
+
+        # Cliente enojado SOLO si falló todos los minijuegos (pedido cancelado)
+        # Si falló algunos pero completó el pedido → cliente feliz con precio reducido
+        pedido_exitoso = not self._pedido_cancelado
+
+        # Siempre se cobra el precio restante (ya descontadas las penalizaciones)
+        if self.pedido_activo.precio_actual > 0:
+            self.dinero_acumulado += self.pedido_activo.precio_actual
+
+        # Cliente feliz solo si NO se canceló el pedido
+        self._mostrar_resultado_pedido(exito=pedido_exitoso)
 
     def generar_nuevo_pedido(self) -> None:
         self.pedidos_disponibles.append(Pedido.generar_aleatorio(self.nivel))
@@ -216,6 +227,7 @@ class GameManager:
         return self.pedido_activo.minijuegos[self.indice_minijuego]
 
     def _cancelar_pedido_activo(self) -> None:
+        self._pedido_cancelado = True
         self._mostrar_resultado_pedido(exito=False)
 
     def _mostrar_resultado_pedido(self, exito: bool) -> None:
@@ -227,13 +239,14 @@ class GameManager:
         self.fase_pedido = "anim_resultado"
 
     def finalizar_resultado_pedido(self) -> None:
-        exito = self._ultimo_pedido_exitoso
+        cancelado = getattr(self, "_pedido_cancelado", False)
         self.fase_pedido = None
         self._ultimo_pedido_exitoso = None
-        if exito:
-            self.generar_nuevo_pedido()
-        else:
+        self._pedido_cancelado = False
+        if cancelado:
             self._llenar_cola_pedidos()
+        else:
+            self.generar_nuevo_pedido()
 
     def _llenar_cola_pedidos(self) -> None:
         while len(self.pedidos_disponibles) < PEDIDOS_EN_COLA:
